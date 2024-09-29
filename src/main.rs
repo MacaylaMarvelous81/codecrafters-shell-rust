@@ -4,9 +4,9 @@ use std::io::{self, Write};
 fn main() {
     // Wait for user input
     let stdin = io::stdin();
-    let will_terminate = false;
+    let mut status: Option<u8> = None;
 
-    while !will_terminate {
+    while status.is_none() {
         print!("$ ");
         io::stdout().flush().unwrap();
 
@@ -18,8 +18,16 @@ fn main() {
 
         match command {
             Some(command) => {
-                if command != "" {
-                    println!("{}: command not found", command);
+                match command {
+                    "exit" => {
+                        status = Some(args.next().map(|arg| {
+                            arg.parse().unwrap_or(0)
+                        }).unwrap_or(0));
+                    }
+                    "" => {}
+                    _ => {
+                        println!("{}: command not found", command);
+                    }
                 }
             }
             None => {}
