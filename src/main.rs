@@ -24,6 +24,9 @@ fn main() {
                             arg.parse().unwrap_or(0)
                         }).unwrap_or(0));
                     }
+                    "echo" => {
+                        println!("{}", args.collect::<Vec<&str>>().join(" "));
+                    }
                     "" => {}
                     _ => {
                         println!("{}: command not found", command);
