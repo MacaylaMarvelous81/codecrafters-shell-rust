@@ -27,6 +27,15 @@ fn main() {
                     "echo" => {
                         println!("{}", args.collect::<Vec<&str>>().join(" "));
                     }
+                    "type" => {
+                        let subject = args.next();
+
+                        if subject == Some("exit") || subject == Some("echo") || subject == Some("type") {
+                            println!("{} is a shell builtin", subject.unwrap_or(""))
+                        } else {
+                            println!("{}: not found", subject.unwrap_or(""))
+                        }
+                    }
                     "" => {}
                     _ => {
                         println!("{}: command not found", command);
