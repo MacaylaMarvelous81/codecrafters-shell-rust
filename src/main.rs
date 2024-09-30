@@ -45,11 +45,12 @@ struct TypeCommand {}
 impl RunnableCommand for TypeCommand {
     fn exec(&self, args: &mut dyn Iterator<Item=&str>) -> Option<u8> {
         let subject = args.next();
+        let command = subject.map(|name| Command::new(name));
 
-        if subject == Some("exit") || subject == Some("echo") || subject == Some("type") {
-            println!("{} is a shell builtin", subject.unwrap_or(""))
+        if let Some(Command::Builtin(command)) = command {
+            println!("{} is a shell builtin", subject.unwrap_or(""));
         } else {
-            println!("{}: not found", subject.unwrap_or(""))
+            println!("{}: not found", subject.unwrap_or(""));
         }
 
         None
