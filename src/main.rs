@@ -1,3 +1,5 @@
+extern crate which;
+
 use which::which;
 #[allow(unused_imports)]
 use std::io::{self, Write};
