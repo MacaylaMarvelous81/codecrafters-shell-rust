@@ -1,9 +1,11 @@
+use which::which;
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::path::PathBuf;
 
 enum Command {
     Builtin(Box<dyn RunnableCommand>),
-    Executable,
+    Executable(PathBuf),
     Unknown
 }
 
@@ -13,7 +15,15 @@ impl Command {
             "exit" => Self::Builtin(Box::new(ExitCommand {})),
             "echo" => Self::Builtin(Box::new(EchoCommand {})),
             "type" => Self::Builtin(Box::new(TypeCommand {})),
-            _ => Self::Unknown
+            "" => Self::Unknown,
+            name => {
+                let exec_path = which(name);
+                if let Ok(exec_path) = exec_path {
+                    Self::Executable(exec_path)
+                } else {
+                    Self::Unknown
+                }
+            }
         }
     }
 }
@@ -45,13 +55,15 @@ struct TypeCommand {}
 impl RunnableCommand for TypeCommand {
     fn exec(&self, args: &mut dyn Iterator<Item=&str>) -> Option<u8> {
         let subject = args.next();
-        let command = subject.map(|name| Command::new(name));
+        subject.map(|name| {
+            let command = Command::new(name);
 
-        if let Some(Command::Builtin(command)) = command {
-            println!("{} is a shell builtin", subject.unwrap_or(""));
-        } else {
-            println!("{}: not found", subject.unwrap_or(""));
-        }
+            match command {
+                Command::Builtin(_) => println!("{} is a shell builtin", subject.unwrap_or("")),
+                Command::Executable(path) => println!("{} is {}", subject.unwrap_or(""), path.display()),
+                Command::Unknown => println!("{}: not found", subject.unwrap_or(""))
+            }
+        });
 
         None
     }
@@ -79,7 +91,7 @@ fn main() {
                 Command::Builtin(command) => {
                     status = command.exec(&mut args);
                 }
-                Command::Executable => {}
+                Command::Executable(_) => todo!(),
                 Command::Unknown => {
                     if command_name != "" {
                         println!("{}: command not found", command_name);
