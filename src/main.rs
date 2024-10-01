@@ -1,3 +1,4 @@
+use std::env;
 use which::which;
 #[allow(unused_imports)]
 use std::io::{self, Write};
@@ -16,6 +17,7 @@ impl ShellCommand {
             "exit" => Self::Builtin(Box::new(ExitCommand {})),
             "echo" => Self::Builtin(Box::new(EchoCommand {})),
             "type" => Self::Builtin(Box::new(TypeCommand {})),
+            "pwd" => Self::Builtin(Box::new(PwdCommand {})),
             "" => Self::Unknown,
             name => {
                 let exec_path = which(name);
@@ -30,31 +32,29 @@ impl ShellCommand {
 }
 
 trait RunnableCommand {
-    fn exec(&self, args: &mut dyn Iterator<Item=&str>) -> Option<u8>;
+    fn exec(&self, state: &mut ShellState, args: &mut dyn Iterator<Item=&str>);
 }
 
-struct ExitCommand {}
+struct ExitCommand;
 
 impl RunnableCommand for ExitCommand {
-    fn exec(&self, args: &mut dyn Iterator<Item=&str>) -> Option<u8> {
-        Some(args.next().map(|arg| arg.parse().unwrap_or(0)).unwrap_or(0))
+    fn exec(&self, state: &mut ShellState, args: &mut dyn Iterator<Item=&str>) {
+        state.status = Some(args.next().map(|arg| arg.parse().unwrap_or(0)).unwrap_or(0))
     }
 }
 
-struct EchoCommand {}
+struct EchoCommand;
 
 impl RunnableCommand for EchoCommand {
-    fn exec(&self, args: &mut dyn Iterator<Item=&str>) -> Option<u8> {
+    fn exec(&self, state: &mut ShellState, args: &mut dyn Iterator<Item=&str>) {
         println!("{}", args.collect::<Vec<&str>>().join(" "));
-
-        None
     }
 }
 
-struct TypeCommand {}
+struct TypeCommand;
 
 impl RunnableCommand for TypeCommand {
-    fn exec(&self, args: &mut dyn Iterator<Item=&str>) -> Option<u8> {
+    fn exec(&self, state: &mut ShellState, args: &mut dyn Iterator<Item=&str>) {
         let subject = args.next();
         subject.map(|name| {
             let command = ShellCommand::new(name);
@@ -65,17 +65,31 @@ impl RunnableCommand for TypeCommand {
                 ShellCommand::Unknown => println!("{}: not found", subject.unwrap_or(""))
             }
         });
-
-        None
     }
+}
+
+struct PwdCommand;
+
+impl RunnableCommand for PwdCommand {
+    fn exec(&self, state: &mut ShellState, args: &mut dyn Iterator<Item=&str>) {
+        println!("{}", state.directory.display())
+    }
+}
+
+struct ShellState {
+    status: Option<u8>,
+    directory: PathBuf
 }
 
 fn main() {
     // Wait for user input
     let stdin = io::stdin();
-    let mut status: Option<u8> = None;
+    let mut state = ShellState {
+        status: None,
+        directory: env::current_dir().unwrap_or(env::temp_dir())
+    };
 
-    while status.is_none() {
+    while state.status.is_none() {
         print!("$ ");
         io::stdout().flush().unwrap();
 
@@ -90,7 +104,7 @@ fn main() {
 
             match command {
                 ShellCommand::Builtin(command) => {
-                    status = command.exec(&mut args);
+                    command.exec(&mut state, &mut args);
                 }
                 ShellCommand::Executable(path) => {
                     let result = Command::new(path)
