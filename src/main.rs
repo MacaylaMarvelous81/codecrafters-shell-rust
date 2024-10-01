@@ -2,14 +2,15 @@ use which::which;
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 
-enum Command {
+enum ShellCommand {
     Builtin(Box<dyn RunnableCommand>),
     Executable(PathBuf),
     Unknown
 }
 
-impl Command {
+impl ShellCommand {
     fn new(command: &str) -> Self {
         match command {
             "exit" => Self::Builtin(Box::new(ExitCommand {})),
@@ -56,12 +57,12 @@ impl RunnableCommand for TypeCommand {
     fn exec(&self, args: &mut dyn Iterator<Item=&str>) -> Option<u8> {
         let subject = args.next();
         subject.map(|name| {
-            let command = Command::new(name);
+            let command = ShellCommand::new(name);
 
             match command {
-                Command::Builtin(_) => println!("{} is a shell builtin", subject.unwrap_or("")),
-                Command::Executable(path) => println!("{} is {}", subject.unwrap_or(""), path.display()),
-                Command::Unknown => println!("{}: not found", subject.unwrap_or(""))
+                ShellCommand::Builtin(_) => println!("{} is a shell builtin", subject.unwrap_or("")),
+                ShellCommand::Executable(path) => println!("{} is {}", subject.unwrap_or(""), path.display()),
+                ShellCommand::Unknown => println!("{}: not found", subject.unwrap_or(""))
             }
         });
 
@@ -85,14 +86,24 @@ fn main() {
         let command_name = args.next();
 
         command_name.map(|command_name| {
-            let command = Command::new(command_name);
+            let command = ShellCommand::new(command_name);
 
             match command {
-                Command::Builtin(command) => {
+                ShellCommand::Builtin(command) => {
                     status = command.exec(&mut args);
                 }
-                Command::Executable(_) => todo!(),
-                Command::Unknown => {
+                ShellCommand::Executable(path) => {
+                    let result = Command::new(path)
+                        .args(args)
+                        .stdout(Stdio::inherit())
+                        .stderr(Stdio::inherit())
+                        .output();
+
+                    if result.is_err() {
+                        println!("failed to execute {}", command_name);
+                    }
+                },
+                ShellCommand::Unknown => {
                     if command_name != "" {
                         println!("{}: command not found", command_name);
                     }
