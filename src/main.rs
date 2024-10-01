@@ -73,22 +73,23 @@ struct CdCommand;
 
 impl RunnableCommand for CdCommand {
     fn exec(&self, state: &mut ShellState, args: &mut dyn Iterator<Item=&str>) {
-        if args.next().map(|path| {
-            let path = PathBuf::from(path);
+        match args.next() {
+            Some(path) => {
+                let path = PathBuf::from(path);
 
-            match path.try_exists() {
-                Ok(exists) => {
-                    if exists {
-                        // BUG: Assumes that the path is absolute (which it might not be!)
-                        state.directory = path
-                    } else {
-                        println!("cd: {}: No such file or directory", path.display())
+                match path.try_exists() {
+                    Ok(exists) => {
+                        if exists {
+                            // BUG: Assumes that the path is absolute (which it might not be!)
+                            state.directory = path
+                        } else {
+                            println!("cd: {}: No such file or directory", path.display())
+                        }
                     }
+                    Err(err) => println!("Failed to check existence of {}: {}", path.display(), err)
                 }
-                Err(err) => println!("Failed to check existence of {}: {}", path.display(), err)
-            }
-        }).is_none() {
-            todo!()
+            },
+            None => todo!()
         }
     }
 }
