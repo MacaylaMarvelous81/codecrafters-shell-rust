@@ -18,6 +18,7 @@ impl ShellCommand {
             "echo" => Self::Builtin(Box::new(EchoCommand {})),
             "type" => Self::Builtin(Box::new(TypeCommand {})),
             "pwd" => Self::Builtin(Box::new(PwdCommand {})),
+            "cd" => Self::Builtin(Box::new(CdCommand {})),
             "" => Self::Unknown,
             name => {
                 let exec_path = which(name);
@@ -65,6 +66,30 @@ impl RunnableCommand for TypeCommand {
                 ShellCommand::Unknown => println!("{}: not found", subject.unwrap_or(""))
             }
         });
+    }
+}
+
+struct CdCommand;
+
+impl RunnableCommand for CdCommand {
+    fn exec(&self, state: &mut ShellState, args: &mut dyn Iterator<Item=&str>) {
+        if args.next().map(|path| {
+            let path = PathBuf::from(path);
+
+            match path.try_exists() {
+                Ok(exists) => {
+                    if exists {
+                        // BUG: Assumes that the path is absolute (which it might not be!)
+                        state.directory = path
+                    } else {
+                        println!("cd: {}: No such file or directory", path.display())
+                    }
+                }
+                Err(err) => println!("Failed to check existence of {}: {}", path.display(), err)
+            }
+        }).is_none() {
+            todo!()
+        }
     }
 }
 
