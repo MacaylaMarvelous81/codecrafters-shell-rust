@@ -50,7 +50,7 @@ fn main() {
                 }
                 ShellCommand::Unknown => {
                     if !command_name.is_empty() {
-                        println!("{}: commands not found", command_name);
+                        println!("{}: command not found", command_name);
                     }
                 }
             }
