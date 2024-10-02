@@ -8,16 +8,14 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 struct ShellState {
-    status: Option<u8>,
-    directory: PathBuf,
+    status: Option<u8>
 }
 
 fn main() {
     // Wait for user input
     let stdin = io::stdin();
     let mut state = ShellState {
-        status: None,
-        directory: env::current_dir().unwrap_or(env::temp_dir()),
+        status: None
     };
 
     while state.status.is_none() {
