@@ -13,8 +13,10 @@ impl RunnableCommand for CdCommand {
                 match path.try_exists() {
                     Ok(exists) => {
                         if exists {
-                            // BUG: Assumes that the path is absolute (which it might not be!)
-                            state.directory = path
+                            match path.canonicalize() {
+                                Ok(abs_path) => state.directory = abs_path,
+                                Err(err) => println!("Failed to canonicalize path: {}", err)
+                            }
                         } else {
                             println!("cd: {}: No such file or directory", path.display())
                         }
