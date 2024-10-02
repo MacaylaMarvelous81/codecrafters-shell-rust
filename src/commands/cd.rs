@@ -1,6 +1,6 @@
-use std::env::set_current_dir;
 use crate::commands::RunnableCommand;
 use crate::ShellState;
+use std::env::set_current_dir;
 use std::path::PathBuf;
 
 pub struct CdCommand;
